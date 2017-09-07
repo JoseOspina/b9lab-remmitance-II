@@ -4,14 +4,14 @@ contract Remittances {
 
 	struct Remittance {
 		uint amount;
-		address exchangerAddress;
+		bytes32 exchangerAddressHash;
 		bool paid;
 	}
 
 	/* use the hash of the secrets as key of the remittance! */
 	mapping (bytes32 => Remittance) public remittances;
 
-	event LogRemittanceSent(uint amount, bytes32 secretsHash, address exchangerAddress);
+	event LogRemittanceSent(uint amount, bytes32 secretsHash, bytes32 exchangerAddressHash);
 	event LogRemittancePaid(uint amount, bytes32 secretsHash, address exchanger);
 
 	function Remmitances()	{
@@ -19,7 +19,7 @@ contract Remittances {
 
 	function sendRemittance(
 		bytes32 secretsHash,
-		address exchangerAddress)
+		bytes32 exchangerAddressHash)
 		payable
 		returns (bool success)
 	{
@@ -30,15 +30,15 @@ contract Remittances {
 		/* check that secrets have not been used before.
 			empty struct cannot be detected, so use one property to check
 			this key (and pair of secrets) have not been used before */
-		if (remittances[secretsHash].exchangerAddress != 0) throw;
+		if (remittances[secretsHash].exchangerAddressHash != bytes32(0)) throw;
 
 		/* store the remittance data using the secrets hash as key */
-		remittances[secretsHash] = Remittance(msg.value, exchangerAddress, false);
+		remittances[secretsHash] = Remittance(msg.value, exchangerAddressHash, false);
 
 		LogRemittanceSent(
 		    remittances[secretsHash].amount,
 		    secretsHash,
-		    remittances[secretsHash].exchangerAddress);
+		    remittances[secretsHash].exchangerAddressHash);
 
 		return true;
 	}
@@ -52,13 +52,13 @@ contract Remittances {
 		/* get remittance data */
 		bytes32 secretsHash = keccak256(secret1, secret2);
 		Remittance memory remittance = remittances[secretsHash];
-		if (remittance.exchangerAddress == 0) throw;
+		if (remittance.exchangerAddressHash == bytes32(0)) throw;
 
 		/* check is not paid */
 		if (remittance.paid) throw;
 
 		/* check exchanger is calling */
-		if (remittance.exchangerAddress != msg.sender) throw;
+		if (remittance.exchangerAddressHash != keccak256(msg.sender)) throw;
 
  		remittance.paid = true;
 		if(!msg.sender.send(remittance.amount)) {

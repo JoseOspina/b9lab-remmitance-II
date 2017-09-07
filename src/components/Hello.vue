@@ -15,8 +15,6 @@
       <h5>current balance: {{ fromBalance.toFixed(2) }} eth</h5>
     </div>
 
-
-
     <div class="w3-row w3-margin-top">
       <button class="w3-col s6 w3-bottombar w3-button" :class="{'w3-border-blue': sendRemittance}"
         @click="sendRemittance = true">
@@ -88,6 +86,15 @@
       <div class="w3-row w3-margin-top send-row">
         <button @click="pay()" class="w3-button w3-blue w3-round">request funds</button>
       </div>
+
+      <div v-if="paymentProcessed" class="">
+        <div v-if="paymentSuccesfull" class="w3-panel w3-padding w3-green w3-round">
+          Payment succesfully made!
+        </div>
+        <div v-if="!paymentSuccesfull" class="w3-panel w3-padding w3-red w3-round">
+          Error while processing payment transaction
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -110,6 +117,7 @@ export default {
       secretsHash: '',
       remittanceSuccesfullySent: false,
       contractBalance: '0',
+      paymentProcessed: false,
       paymentSuccesfull: true,
       fromBalance: 0
     }
@@ -144,7 +152,10 @@ export default {
       var secretsHash = '0x' + keccak256(secret1 + secret2)
       console.log(secretsHash)
 
-      this.instance.sendRemittance(secretsHash, this.exchangerAddress, { from: this.from, value: web3.toWei(this.amount, 'ether') })
+      var exchangerHash = '0x' + keccak256(this.exchangerAddress)
+      console.log(exchangerHash)
+
+      this.instance.sendRemittance(secretsHash, exchangerHash, { from: this.from, value: web3.toWei(this.amount, 'ether') })
       .then((result) => {
         if (result) {
           this.remittanceSuccesfullySent = true
@@ -172,15 +183,21 @@ export default {
       this.instance.pay(this.secret1, this.secret2, { from: this.from })
       .then((result) => {
         if (result) {
+          this.paymentProcessed = true
+          this.paymentSuccesfull = true
           this.secret1 = ''
           this.secret2 = ''
           this.exchangerAddressHash = ''
-          this.paymentSuccesfull = true
           this.updateContractBalance()
           this.updateFromBalance()
         } else {
           console.log('error sending remittance')
+          this.paymentSuccesfull = false
         }
+      }).catch((err) => {
+        this.paymentProcessed = true
+        this.paymentSuccesfull = false
+        console.log(err)
       })
     }
   },
