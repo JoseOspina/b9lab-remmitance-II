@@ -37,7 +37,11 @@
           <label class=""><b>Exchanger Address</b></label>
         </div>
         <div class="w3-col m6">
-          <input v-model="exchangerAddress" type="text" class="w3-input">
+          <select class="w3-input" v-model="exchangerAddress">
+            <option v-for="account in accounts">
+              {{ account }}
+            </option>
+          </select>
         </div>
       </div>
 
@@ -123,9 +127,7 @@ export default {
       var secretsHash = '0x' + keccak256(secret1 + secret2)
       console.log(secretsHash)
 
-      var exchangerHash = keccak256(this.exchangerAddress)
-
-      this.instance.sendRemittance(secretsHash, exchangerHash, { from: this.from, value: web3.toWei(this.amount, 'ether') })
+      this.instance.sendRemittance(secretsHash, this.exchangerAddress, { from: this.from, value: web3.toWei(this.amount, 'ether') })
       .then((result) => {
         if (result) {
           this.remittanceSuccesfullySent = true
