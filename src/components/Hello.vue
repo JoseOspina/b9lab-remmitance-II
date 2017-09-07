@@ -11,6 +11,12 @@
       </select>
     </div>
 
+    <div class="w3-row">
+      <h5>current balance: {{ fromBalance.toFixed(2) }} eth</h5>
+    </div>
+
+
+
     <div class="w3-row w3-margin-top">
       <button class="w3-col s6 w3-bottombar w3-button" :class="{'w3-border-blue': sendRemittance}"
         @click="sendRemittance = true">
@@ -103,7 +109,9 @@ export default {
       secret2: '',
       secretsHash: '',
       remittanceSuccesfullySent: false,
-      contractBalance: '0'
+      contractBalance: '0',
+      paymentSuccesfull: true,
+      fromBalance: 0
     }
   },
 
@@ -114,6 +122,15 @@ export default {
           console.log(err)
         } else {
           this.contractBalance = Number(web3.fromWei(balance, 'ether'))
+        }
+      })
+    },
+    updateFromBalance () {
+      web3.eth.getBalance(this.from, (err, balance) => {
+        if (err) {
+          console.log(err)
+        } else {
+          this.fromBalance = Number(web3.fromWei(balance, 'ether'))
         }
       })
     },
@@ -135,6 +152,7 @@ export default {
           this.secret1 = secret1
           this.secret2 = secret2
           this.updateContractBalance()
+          this.updateFromBalance()
         } else {
           console.log('error sending remittance')
         }
@@ -154,11 +172,22 @@ export default {
       this.instance.pay(this.secret1, this.secret2, { from: this.from })
       .then((result) => {
         if (result) {
+          this.secret1 = ''
+          this.secret2 = ''
+          this.exchangerAddressHash = ''
+          this.paymentSuccesfull = true
           this.updateContractBalance()
+          this.updateFromBalance()
         } else {
           console.log('error sending remittance')
         }
       })
+    }
+  },
+
+  watch: {
+    from () {
+      this.updateFromBalance()
     }
   },
 
